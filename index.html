@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Entrega: organizador de tareas</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap">
+<style>
+:root{--bg:#F2F5FA;--card:#fff;--ink:#1B2433;--mut:#5D6A82;--line:#DDE3EE;--ac:#2F4BE0;--on:#fff;--red:#C93A3A;--redbg:#FCE9E9;--amb:#8A5A00;--ambbg:#FCF0D5;--grn:#25704A;--grnbg:#E4F4EB;--gry:#E8ECF4;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10151F;--card:#1A2130;--ink:#EEF1F8;--mut:#9AA6BD;--line:#2B3548;--ac:#8EA2FF;--on:#10151F;--red:#FF8E8E;--redbg:#3A1F24;--amb:#F2C46B;--ambbg:#3A2E14;--grn:#7ED6A4;--grnbg:#173226;--gry:#252E40}}
+html{scroll-padding-top:env(safe-area-inset-top,0px);color-scheme:light dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"DM Sans",system-ui,sans-serif;font-size:16px;line-height:1.5}
+main{max-width:560px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:28px;font-weight:700;margin:8px 0 2px;letter-spacing:-.02em}
+.sub{color:var(--mut);margin:0 0 18px;font-size:15px}
+form{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;display:grid;gap:8px}
+input,select,button{font:inherit;color:inherit}
+input,select{width:100%;min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.add{min-height:46px;border:0;border-radius:10px;background:var(--ac);color:var(--on);font-weight:700;cursor:pointer}
+.err{color:var(--red);font-size:14px;margin:0;min-height:0}
+h2{font-size:14px;font-weight:700;color:var(--mut);margin:26px 0 6px}
+.t{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.chk{width:28px;height:28px;border-radius:50%;border:2px solid var(--mut);background:transparent;flex:none;cursor:pointer;display:grid;place-items:center;padding:0;color:var(--on);font-size:16px;line-height:1}
+.done .chk{background:var(--ac);border-color:var(--ac)}
+.tx{flex:1;min-width:0}
+.tt{font-weight:500;overflow-wrap:anywhere}
+.done .tt{text-decoration:line-through;color:var(--mut)}
+.ms{font-size:13px;color:var(--mut)}
+.tag{font-size:12px;font-weight:500;padding:3px 9px;border-radius:8px;white-space:nowrap}
+.r{background:var(--redbg);color:var(--red)}.a{background:var(--ambbg);color:var(--amb)}.g{background:var(--grnbg);color:var(--grn)}.n{background:var(--gry);color:var(--mut)}
+.del{border:0;background:transparent;color:var(--mut);cursor:pointer;font-size:20px;min-width:36px;min-height:36px;border-radius:8px}
+.empty{background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:22px 16px;text-align:center;color:var(--mut)}
+.don{margin-top:32px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;text-align:center}
+.don p{margin:0 0 12px;color:var(--mut);font-size:15px}
+.don strong{display:block;color:var(--ink);font-size:16px;margin-bottom:4px}
+.don a{display:inline-block;min-height:44px;line-height:44px;padding:0 20px;border-radius:10px;background:var(--gry);color:var(--ink);font-weight:700;text-decoration:none}
+.don a:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+#dm{min-height:20px;margin:8px 0 0;font-size:14px}
+</style>
+</head>
+<body>
+<main>
+<h1>Entrega</h1>
+<p class="sub" id="sub">Anota tus tareas en segundos.</p>
+<form id="f" autocomplete="off">
+<input id="n" placeholder="Reporte de física" aria-label="Nombre de la tarea" maxlength="80">
+<div class="row">
+<input id="m" placeholder="Materia" aria-label="Materia" maxlength="30">
+<input id="d" type="date" aria-label="Fecha de entrega">
+</div>
+<p class="err" id="e" role="alert"></p>
+<button class="add" type="submit">Agregar tarea</button>
+</form>
+<div id="list"></div>
+<section class="don">
+<strong>¿Te sirve Entrega?</strong>
+<p>Es gratis y la hace un estudiante. Tu donativo voluntario sirve para mejorar la app y poder subirla a Play Store.</p>
+<a id="da" href="#" rel="noopener">Invítame un café</a>
+<p id="dm" role="status"></p>
+</section>
+</main>
+<script>
+var K="entrega:tareas",T=[];
+function load(){try{var v=localStorage.getItem(K);T=v?JSON.parse(v):[]}catch(x){T=[]}if(!Array.isArray(T))T=[]}
+function save(){try{localStorage.setItem(K,JSON.stringify(T))}catch(x){}}
+function esc(s){var d=document.createElement("div");d.textContent=s;return d.innerHTML}
+function pd(s){var p=s.split("-");return new Date(+p[0],+p[1]-1,+p[2])}
+function today(){var n=new Date();return new Date(n.getFullYear(),n.getMonth(),n.getDate())}
+function diff(s){return Math.round((pd(s)-today())/864e5)}
+var DM=["dom","lun","mar","mié","jue","vie","sáb"],MS=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+function fmt(s){var d=pd(s);return DM[d.getDay()]+" "+d.getDate()+" "+MS[d.getMonth()]}
+function grp(t){var k=diff(t.d);if(k<0)return 0;if(k===0)return 1;if(k===1)return 2;if(k<=7)return 3;return 4}
+var GN=["Vencidas","Hoy","Mañana","Esta semana","Más adelante"],GC=["r","r","a","g","n"];
+function render(){
+var pend=T.filter(function(t){return!t.x}).sort(function(a,b){return a.d<b.d?-1:a.d>b.d?1:0});
+var hechas=T.filter(function(t){return t.x});
+var h="";
+if(!T.length){h='<div class="empty">Aún no tienes tareas. Agrega la primera arriba.</div>'}
+for(var g=0;g<5;g++){var L=pend.filter(function(t){return grp(t)===g});if(!L.length)continue;
+h+="<h2>"+GN[g]+"</h2>"+L.map(function(t){return row(t,GC[g])}).join("")}
+if(hechas.length){h+="<h2>Hechas</h2>"+hechas.map(function(t){return row(t,"n")}).join("")}
+document.getElementById("list").innerHTML=h;
+var c=pend.length;document.getElementById("sub").textContent=c?(c===1?"Tienes 1 tarea pendiente.":"Tienes "+c+" tareas pendientes."):"Todo al día.";
+}
+function row(t,c){return '<div class="t'+(t.x?" done":"")+'"><button class="chk" data-a="x" data-i="'+t.i+'" aria-label="Marcar como hecha">'+(t.x?"✓":"")+'</button><div class="tx"><div class="tt">'+esc(t.n)+'</div><div class="ms">'+esc(t.m||"Sin materia")+'</div></div><span class="tag '+c+'">'+fmt(t.d)+'</span><button class="del" data-a="d" data-i="'+t.i+'" aria-label="Eliminar tarea">×</button></div>'}
+document.getElementById("f").addEventListener("submit",function(ev){ev.preventDefault();
+var n=document.getElementById("n"),m=document.getElementById("m"),d=document.getElementById("d"),e=document.getElementById("e");
+if(!n.value.trim()){e.textContent="Escribe el nombre de la tarea.";n.focus();return}
+if(!d.value){e.textContent="Elige la fecha de entrega.";d.focus();return}
+e.textContent="";
+T.push({i:Date.now()+Math.floor(Math.random()*1000),n:n.value.trim(),m:m.value.trim(),d:d.value,x:false});
+save();n.value="";m.value="";n.focus();render()});
+document.getElementById("list").addEventListener("click",function(ev){
+var b=ev.target.closest("button");if(!b)return;var i=+b.dataset.i;
+if(b.dataset.a==="x"){T.forEach(function(t){if(t.i===i)t.x=!t.x})}
+if(b.dataset.a==="d"){T=T.filter(function(t){return t.i!==i})}
+save();render()});
+var dd=document.getElementById("d"),n0=today();
+dd.value=n0.getFullYear()+"-"+String(n0.getMonth()+1).padStart(2,"0")+"-"+String(n0.getDate()).padStart(2,"0");
+var DONATE_URL="";
+var da=document.getElementById("da");
+if(DONATE_URL){da.href=DONATE_URL;da.target="_blank"}
+else{da.addEventListener("click",function(ev){ev.preventDefault();document.getElementById("dm").textContent="El enlace de donativo se activará pronto."})}
+load();render();
+</script>
+</body>
+</html>
